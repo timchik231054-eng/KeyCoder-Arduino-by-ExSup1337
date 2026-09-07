@@ -1,6 +1,4 @@
-##### &#x20;\[Russian version](README.md)
-
-##### 
+##### \*\*English version\*\* | \[Русская версия](README.md)
 
 # KeyCoder-Arduino by ExSup1337
 

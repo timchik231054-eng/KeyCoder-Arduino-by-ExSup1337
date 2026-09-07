@@ -1,4 +1,4 @@
-##### \[English version](README\_En.md)
+##### \[English version](README\_EN.md) | \*\*Русская версия\*\*
 
 ###### 
 
