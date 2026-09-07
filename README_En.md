@@ -1,4 +1,4 @@
-##### \*\*English version\*\* | \[Русская версия](README.md)
+##### <b>English version</b> | <a href="README.md">Русская версия</a>
 
 # KeyCoder-Arduino by ExSup1337
 

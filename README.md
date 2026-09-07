@@ -1,4 +1,4 @@
-##### \[English version](README\_En.md) | \*\*Русская версия\*\*
+##### <a href="README\_En.md">English version</a> | <b>Русская версия</b>
 
 ###### 
 
