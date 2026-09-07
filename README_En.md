@@ -1,4 +1,4 @@
-##### \*\*English version\*\* | \[Russian version](README.md)
+##### &#x20;\[Russian version](README.md)
 
 ##### 
 
