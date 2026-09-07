@@ -1,77 +1,58 @@
-#### \*\*English version\*\* | \[Русская версия](README.md)
+##### \[English version](README\_EN.md) | \*\*Russian version\*\*
 
-# KeyCoder-Arduino by ExSup1337
+##### 
 
+##### \# KeyCoder-Arduino by ExSup1337
 
+##### 
 
-## *Портативный автономный ридер и копирайтер бейджей, ключей от домофонов и кард доступа.*
+##### \## \*Portable standalone reader and writer for badges, intercom keys, and access cards.\*
 
+##### 
 
+##### \### Components
 
+##### 
 
+##### \*\*Modules and Board\*\*
 
-##### \## Компоненты ##
+##### \* Arduino Nano V3.0 (Type-C, ATmega328P) - 1 pc
 
+##### \* OLED Display 0.96" I2C (128x64) - 1 pc (4 pins: VCC, GND, SCL, SDA)
 
+##### \* RFID Module RC522 - 1 pc
 
-&#x20; 
+##### 
 
-###### &#x20;       <-- Модули и плата -->
+##### \*\*Power and Charging\*\*
 
+##### \* Li-Po Battery 3.7V 600mAh - 1 pc
 
+##### \* TP4056 Charging Module with Protection - 1 pc
 
-* Arduino Nano V3.0 (Type-C, ATmega328P) - 1шт
-* OLED-дисплей 0.96" I2C (128x64) - 1шт (4 контакта: VCC, GND, SCL, SDA)
-* RFID-модуль RC522 - 1шт
+##### \* MT3608 Step-Up Converter - 1 pc
 
+##### 
 
+##### \*\*Emulation, Indication \& Controls\*\*
 
+##### \* UID Changeable (Zero Block) Key Fobs - 3–5 pcs
 
+##### \* Switch / Toggle Switch - 1 pc
 
-      <-- Питание и зарядка -->
----
+##### \* Tactile Push Buttons - 3 pcs
 
+##### \* LED 3mm or 5mm - 1 pc
 
+##### \* 220 Ohm Resistor - 1 pc
 
-* Li-Po аккумулятор 3.7V 600mAh 1 - 1шт
-* Модуль зарядки TP4056 с защитой - 1тш
-* Повышающий преобразователь MT3608 - 1шт
+##### 
 
+##### \*\*Tools and Assembly\*\*
 
+##### \* Digital Multimeter - 1 pc (for safe MT3608 tuning before connecting the board) \*(optional)\*
 
-###### 
+##### \* Breadboard + Jumper Wires - 1 set \*(optional, required for test assembly)\*
 
-###### 
-
-###### &#x20;       <-- Питание и зарядка -->
-
-
-
-* UID Changeable (Zero Block) брелоки 
-* Переключатель / Тумблер - 1 шт
-* Тактовые кнопки - 3 шт
-* Светодиод (LED) 3 мм или 5 мм - 1 шт.
-* Резистор 220 Ом — 1 шт.
-
-
-
-
-
-
-
-###### &#x20;         <-- Инструменты и сборка -->
-
-
-
-* Цифровой мультиметр - 1 шт. (для безопасной настройки MT3608 перед подключением платы).(не обязательно)
-* Макетная плата (Breadboard) + Провода-перемычки - 1 комплект(не обязательно, нежно для тестовой сборки)
-* Паяльник и расходники для пайки
-
-
-
-
-
-
-
-
+##### \* Soldering Iron and Soldering Supplies
 
