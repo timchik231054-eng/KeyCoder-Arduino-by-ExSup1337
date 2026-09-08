@@ -1,39 +1,44 @@
 #include <Wire.h>
-#include <Adafruit_GFX.h>
+#include <Adafruit_GFX.h> // библиотеки для работы с дисплеем
 #include <Adafruit_SSD1306.h>
+
 #include <EEPROM.h> // сохранение в EEPROM(после перезапуска)
+
+#include <SPI.h>  // библиотеки для работы с RC522
+#include <MFRC522.h>
 
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 #define SCREEN_ADDRESS 0x3C
 
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+#define SS_PIN 8
+#define RST_PIN 9
 
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1); // инициализируем дисплей
+
+MFRC522 mfrc522(SS_PIN, RST_PIN); // инициализируем RC522
 
 struct keyData {
-  String name;
+  char name[12];
   byte code[8];
 };
 
 
 keyData keyList[10] = {
-  {"8klass",    {0x01, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77}},
-  {"9klass",    {0x01, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x00}},
-  {"10klass",   {0x01, 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE}},
-  {"10klass+", {0x01, 0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54, 0x32}},
-  {"Avtobus",    {0x01, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55}},
-  {"Uchitel",    {0x01, 0x99, 0x88, 0x77, 0x66, 0x55, 0x44, 0x33}},
-  {"Empty 7",    {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}},
-  {"Empty 8",    {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}},
-  {"Empty 9",    {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}},
-  {"Empty 10",   {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}}
+  {"Empty 1",   {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}},
+  {"Empty 2",   {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}},
+  {"Empty 3",   {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}},
+  {"Empty 4",   {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}},
+  {"Empty 5",   {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}},
+  {"Empty 6",   {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}},
+  {"Empty 7",   {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}},
+  {"Empty 8",   {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}},
+  {"Empty 9",   {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}},
+  {"Empty 10",  {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}}
 };
 
-String Smiles[3] = {"\\(^w^)\\", "\\(^o^)/", "/(o_o)\\"}; //можно было и не создавать массив
-
-int selectedKey;
+byte selectedKey;
 int smoothVoltage = 0;
-//int emptyCell = 0;
 
 enum Mode {
   mode1,
@@ -50,15 +55,30 @@ void Mode3();
 void podMode1();
 void podMode2();
 void podMode3();
+
 void header();
 void footer();
 
+void consoleKeyRename();
+
 void setup() {
-  selectedKey = EEPROM.read(0); // читаем данные из EEPROM последний выбранный ключ
+
+  Serial.begin(9600); 
+
+  selectedKey = EEPROM.read(0);
+  if (selectedKey >= 10 || selectedKey < 0) selectedKey = 0; // читаем данные из EEPROM последний выбранный ключ
+
+  if (EEPROM.read(10) == 0xA5) { 
+    EEPROM.get(11, keyList);
+  }
+
   smoothVoltage = analogRead(A0);
   
   display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS);
   display.setTextColor(SSD1306_WHITE);
+
+  SPI.begin();
+  mfrc522.PCD_Init();
   
   display.clearDisplay();
   display.display();
@@ -89,6 +109,8 @@ void setup() {
 }
 
 void loop() {
+ 
+  consoleKeyRename();
 
   if (digitalRead(2) == LOW) {
     digitalWrite(4, 1);
@@ -110,8 +132,6 @@ void loop() {
     switch (nowmode) {
       case mode1: 
         podMode1(); 
-        display.display();
-        delay(2000); // это переделать так как бозвращение на экран будет по окончанию процедуры а не по истечению 2000 мс
         break;
         
       case mode2: 
@@ -162,11 +182,55 @@ void Mode3() {
 }
 
 void podMode1() {
+  display.clearDisplay();
   header();
   footer();
-  display.setCursor(15, 24);
+  
+  display.setCursor(15, 20);
+  display.setTextSize(1);
+  display.print(F("Scan card..."));
+  display.display();
+
+  bool cardRead = false;
+  unsigned long start = millis();
+
+  // Ожидаем поднесения карты 4 секунды
+  while (millis() - start < 4000) {
+    // Инициализируем карту перед каждой проверкой
+    if (mfrc522.PICC_IsNewCardPresent() == 1) {
+      if (mfrc522.PICC_ReadCardSerial() == 1) {
+        cardRead = true;
+        break;
+      }
+    }
+    delay(50); // Увеличена задержка, чтобы дать шине I2C (дисплею) «подышать»
+  }
+
+  display.clearDisplay();
+  header();
+  footer();
+  display.setCursor(20, 24);
   display.setTextSize(2);
-  display.print(F("podMode1"));
+
+  if (cardRead) {
+    for (byte i = 0; i < 4; i++) {
+      keyList[selectedKey].code[i] = mfrc522.uid.uidByte[i];
+    }
+    sprintf(keyList[selectedKey].name, "Key %d", selectedKey + 1);
+
+    EEPROM.write(10, 0xA5);
+    EEPROM.put(11, keyList);
+
+    mfrc522.PICC_HaltA();
+    mfrc522.PCD_StopCrypto1();
+
+    display.print(F("Saved!"));
+  } else {
+    display.print(F("Timeout!"));
+  }
+
+  display.display();
+  delay(1200);
 }
 
 void podMode2() {
@@ -179,7 +243,7 @@ void podMode2() {
 }
 
 void podMode3() {
-  int keyIndex = 0; 
+  byte keyIndex = 0; 
 
   while(true) {
     display.clearDisplay();
@@ -194,13 +258,11 @@ void podMode3() {
     display.setCursor(10, 38);// вывод ID  кода
     display.setTextSize(1);
     display.print(F("ID:"));
-for(int i = 0; i <= 8; i++){
-    display.print(keyList[keyIndex].code[i]);
-}
-  //  for(int i = 0; i < 4; i++) {
-    //  if(keyList[keyIndex].code[i] < 0x10) display.print("0"); 
-     // display.print(keyList[keyIndex].code[i], HEX);
-   // }
+  for(byte i = 0; i < 4; i++){ 
+   if(keyList[keyIndex].code[i] < 0x10) display.print(F("0"));
+   display.print(keyList[keyIndex].code[i], HEX);
+   if(i < 3) display.print(F(":"));
+  }
 
     display.display();
 
@@ -235,13 +297,57 @@ for(int i = 0; i <= 8; i++){
     }
   }
 }
+void consoleKeyRename() {
+  if (Serial.available() > 0) {
+    String input = Serial.readStringUntil('\n');
+    input.trim();
+
+    if (input == F("/list")) {
+      Serial.println(F("--- KEY LIST ---"));
+      for (byte i = 0; i < 10; i++) {
+        Serial.print(i);
+        Serial.print(F(": "));
+        Serial.print(keyList[i].name);
+        Serial.print(F(" | ID: "));
+        for (byte j = 0; j < 4; j++) {
+          if (keyList[i].code[j] < 0x10) Serial.print(F("0"));
+          Serial.print(keyList[i].code[j], HEX);
+          if (j < 3) Serial.print(F(":"));
+        }
+        Serial.println();
+      }
+      Serial.println(F("----------------"));
+    }
+    else if (input.startsWith("/rename=")) {
+      int commaIndex = input.indexOf(',');
+      if (commaIndex > 4) {
+        byte index = input.substring(4, commaIndex).toInt();
+        String newName = input.substring(commaIndex + 1);
+
+        if (index < 10 && newName.length() > 0) {
+          newName.toCharArray(keyList[index].name, sizeof(keyList[index].name));
+          
+          EEPROM.write(10, 0xA5);
+          EEPROM.put(11, keyList);
+
+          Serial.print(F("Key "));
+          Serial.print(index);
+          Serial.print(F(" renamed to: "));
+          Serial.println(keyList[index].name);
+        } else {
+          Serial.println(F("Error: Index out of range (0-9)"));
+        }
+      }
+    }
+  }
+}
 
 void header() {
   display.setTextSize(1);
   display.setCursor(53, 0);
-  if(nowmode == mode1) display.print(Smiles[0]);
-  else if(nowmode == mode2) display.print(Smiles[1]);
-  else if(nowmode == mode3) display.print(Smiles[2]);
+  if(nowmode == mode1) display.print(F("\\(^w^)\\"));
+  else if(nowmode == mode2) display.print(F("\\(^o^)/"));
+  else if(nowmode == mode3) display.print(F("/(o_o)\\"));
   
   display.setCursor(0, 0);
   display.print(F("KeyCoder         v1.0"));
@@ -259,10 +365,10 @@ void footer() {
   int rawVoltage = analogRead(A0);
   smoothVoltage = (smoothVoltage * 9 + rawVoltage) / 10;
   
-  int percent = map(smoothVoltage, 0, 1023, 0, 100); // при подключении делалей заменить на map(rawVoltage, 614, 860, 0, 100));
+  byte percent = map(smoothVoltage, 0, 1023, 0, 100); // при подключении делалей заменить на map(rawVoltage, 614, 860, 0, 100));
   percent = constrain(percent, 0, 100);
 
-  int xPosition = 100;
+  byte xPosition = 100;
   if (percent < 100) xPosition = 106;
   if (percent < 10)  xPosition = 112;
 
