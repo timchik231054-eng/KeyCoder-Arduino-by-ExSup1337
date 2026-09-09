@@ -214,16 +214,18 @@ void podMode1() {
   if(digitalRead(2) == LOW){
     return;
   }
-  delay(200);
+  delay(150);
  }
-  display.clearDisplay();
-  display.setCursor(15, 20);
-  display.setTextSize(1);
-  display.print(F("Scan card..."));
-  display.display();
+ // display.clearDisplay();
+  //display.setCursor(15, 20);
+  //display.setTextSize(1);
+  //display.print(F("Scan card..."));
+  //display.display();
 
   bool cardRead = false;
   unsigned long start = millis();
+
+  byte dots = 0; //для анимации точек
 
   while (millis() - start < 4000) {
     // Инициализируем карту перед каждой проверкой
@@ -233,6 +235,22 @@ void podMode1() {
         break;
       }
     }
+
+  display.clearDisplay();
+  display.setCursor(15, 20);
+  display.setTextSize(1);
+  display.print(F("Scan card"));
+  display.display();
+
+    for (byte i = 0; i < dots; i++) {
+    display.print(".");
+  }
+
+  display.display();
+
+  dots++;
+  if (dots > 3) dots = 0;
+
     delay(50); // Увеличена задержка, чтобы дать шине I2C (дисплею) «подышать»
   }
 
