@@ -69,7 +69,7 @@ void setup() {
   if (selectedKey >= 10 || selectedKey < 0) selectedKey = 0; // читаем данные из EEPROM последний выбранный ключ
 
   if (EEPROM.read(10) == 0xA5) { 
-    EEPROM.get(11, keyList);
+      EEPROM.get(11, keyList);
   }
 
   smoothVoltage = analogRead(A0);
@@ -79,6 +79,21 @@ void setup() {
 
   SPI.begin();
   mfrc522.PCD_Init();
+
+  delay(100);
+
+Serial.println(F("RC522 test"));
+
+byte version = mfrc522.PCD_ReadRegister(mfrc522.VersionReg);
+
+Serial.print(F("RC522 Version: 0x"));
+Serial.println(version, HEX);
+
+if (version == 0x00 || version == 0xFF) {
+  Serial.println(F("ERROR: RC522 not detected!"));
+} else {
+  Serial.println(F("RC522 detected!"));
+}
   
   display.clearDisplay();
   display.display();
@@ -136,8 +151,6 @@ void loop() {
         
       case mode2: 
         podMode2(); 
-        display.display();
-        delay(2000); // это переделать так как бозвращение на экран будет по окончанию процедуры а не по истечению 2000 мс
         break;
         
       case mode3: 
@@ -185,7 +198,25 @@ void podMode1() {
   display.clearDisplay();
   header();
   footer();
-  
+
+  display.setCursor(15, 24);
+  display.setTextSize(2);
+  display.print(F("You sure?"));
+  display.setCursor(46, 40);
+  display.setTextSize(1);
+  display.print(F("Yes/No"));
+  display.display();
+
+ while(true){
+  if(digitalRead(3) == LOW){
+    break;
+  }
+  if(digitalRead(2) == LOW){
+    return;
+  }
+  delay(200);
+ }
+  display.clearDisplay();
   display.setCursor(15, 20);
   display.setTextSize(1);
   display.print(F("Scan card..."));
@@ -194,7 +225,6 @@ void podMode1() {
   bool cardRead = false;
   unsigned long start = millis();
 
-  // Ожидаем поднесения карты 4 секунды
   while (millis() - start < 4000) {
     // Инициализируем карту перед каждой проверкой
     if (mfrc522.PICC_IsNewCardPresent() == 1) {
@@ -212,7 +242,7 @@ void podMode1() {
   display.setCursor(20, 24);
   display.setTextSize(2);
 
-  if (cardRead) {
+  if (cardRead == true) {
     for (byte i = 0; i < 4; i++) {
       keyList[selectedKey].code[i] = mfrc522.uid.uidByte[i];
     }
@@ -233,13 +263,71 @@ void podMode1() {
   delay(1200);
 }
 
+
+
 void podMode2() {
+  display.clearDisplay();
   header();
   footer();
 
- // display.setCursor(15, 24);
- // display.setTextSize(2);
- // display.print(F("podMode2"));
+  display.setCursor(8, 18);
+  display.setTextSize(1);
+  display.print(F("Rewrite: "));
+  display.print(keyList[selectedKey].name);
+
+  display.setCursor(8, 32);
+  display.print(F("Scan new card..."));
+
+  display.display();
+
+  bool cardRead = false;
+  unsigned long start = millis();
+
+  // Ждём карту 4 секунды
+  while (millis() - start < 4000) {
+
+    if (mfrc522.PICC_IsNewCardPresent()) {
+      if (mfrc522.PICC_ReadCardSerial()) {
+        cardRead = true;
+        break;
+      }
+    }
+
+    delay(50);
+  }
+
+  display.clearDisplay();
+  header();
+  footer();
+
+  if (cardRead) {
+
+    // Перезаписываем UID выбранного ключа
+    for (byte i = 0; i < 4; i++) {
+      keyList[selectedKey].code[i] = mfrc522.uid.uidByte[i];
+    }
+
+    
+    EEPROM.write(10, 0xA5); // сохранение данные в EEPROM
+    EEPROM.put(11, keyList);
+
+    
+    mfrc522.PICC_HaltA(); // завершение работу с картой
+    mfrc522.PCD_StopCrypto1();
+
+    display.setCursor(20, 24);
+    display.setTextSize(2);
+    display.print(F("Done!"));
+
+  } else {
+
+    display.setCursor(20, 24);
+    display.setTextSize(2);
+    display.print(F("Timeout!"));
+  }
+
+  display.display();
+  delay(1200);
 }
 
 void podMode3() {
