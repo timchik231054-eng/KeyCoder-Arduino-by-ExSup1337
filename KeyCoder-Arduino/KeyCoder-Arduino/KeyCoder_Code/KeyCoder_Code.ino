@@ -482,7 +482,7 @@ void consoleKeyRename() {
         byte index = input.substring(4, commaIndex).toInt();
         String newName = input.substring(commaIndex + 1);
 
-        if (index < 10 && newName.length() > 0) {
+        if (index < 10 && newName.length() > 0 && newName.length() <= 9){
           newName.toCharArray(keyList[index].name, sizeof(keyList[index].name));
           
           EEPROM.write(10, 0xA5);
@@ -493,7 +493,7 @@ void consoleKeyRename() {
           Serial.print(F(" renamed to: "));
           Serial.println(keyList[index].name);
         } else {
-          Serial.println(F("Error: Index out of range (0-9)"));
+          Serial.println(F("Error: Index out of range (0-9) or name is too long"));
         }
       }
     }
