@@ -2,6 +2,8 @@
 
 # KeyCoder-Arduino by ExSup1337
 
+!!!in progress!!!
+
 ##### 
 
 ## \*Portable standalone reader and writer for badges, intercom keys, and access cards.\*
