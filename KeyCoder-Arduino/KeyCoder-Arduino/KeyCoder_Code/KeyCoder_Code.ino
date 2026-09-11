@@ -110,7 +110,7 @@ void setup() {
   Serial.begin(9600); 
 
   selectedKey = EEPROM.read(0);
-  if (selectedKey >= 10 || selectedKey < 0) selectedKey = 0; // читаем данные из EEPROM последний выбранный ключ
+  if (selectedKey >= 10) selectedKey = 0; // читаем данные из EEPROM последний выбранный ключ
 
   if (EEPROM.read(10) == 0xA5) { 
       EEPROM.get(11, keyList);
@@ -125,8 +125,6 @@ void setup() {
   mfrc522.PCD_Init();
 
   delay(100);
-
-Serial.println(F("RC522 test"));
 
 byte version = mfrc522.PCD_ReadRegister(mfrc522.VersionReg);
 
@@ -222,7 +220,7 @@ void Mode1() {
   display.setTextSize(2);
   display.print(F("Read"));
   display.drawBitmap(70, 16, epd_bitmap_book, 32, 32, SSD1306_WHITE);
-  display.display(); 
+  //display.display(); 
 }
 
 void Mode2() {
@@ -232,7 +230,7 @@ void Mode2() {
   display.setTextSize(2);
   display.print(F("Dup"));
   display.drawBitmap(70, 16, epd_bitmap_dup, 32, 32, SSD1306_WHITE);
-  display.display(); 
+  //display.display(); 
 
 }
 
@@ -243,7 +241,7 @@ void Mode3() {
   display.setTextSize(2);
   display.print(F("List"));
   display.drawBitmap(70, 16, epd_bitmap_list1, 32, 32, SSD1306_WHITE);
-  display.display(); 
+ // display.display(); 
 }
 
 void podMode1() {
@@ -268,33 +266,27 @@ void podMode1() {
   }
   delay(150);
  }
- // display.clearDisplay();
-  //display.setCursor(15, 20);
-  //display.setTextSize(1);
-  //display.print(F("Scan card..."));
-  //display.display();
+  mfrc522.PCD_Init();
+  delay(50);
 
   bool cardRead = false;
   unsigned long start = millis();
-
   byte dots = 0; //для анимации точек
 
   while (millis() - start < 4000) {
-    // Инициализируем карту перед каждой проверкой
-    if (mfrc522.PICC_IsNewCardPresent() == 1) {
-      if (mfrc522.PICC_ReadCardSerial() == 1) {
+    if (mfrc522.PICC_IsNewCardPresent() == 1 && mfrc522.PICC_ReadCardSerial() == 1) {
         cardRead = true;
         break;
       }
-    }
 
   display.clearDisplay();
+  header();
+  footer();
   display.setCursor(15, 20);
   display.setTextSize(1);
   display.print(F("Scan card"));
-  display.display();
 
-    for (byte i = 0; i < dots; i++) {
+  for (byte i = 0; i < dots; i++) {
     display.print(".");
   }
 
@@ -303,7 +295,7 @@ void podMode1() {
   dots++;
   if (dots > 3) dots = 0;
 
-    delay(50); // Увеличена задержка, чтобы дать шине I2C (дисплею) «подышать»
+    delay(200); // Увеличена задержка, чтобы дать шине I2C (дисплею) «подышать»
   }
 
   display.clearDisplay();
@@ -459,7 +451,6 @@ void consoleKeyRename() {
   if (Serial.available() > 0) {
     String input = Serial.readStringUntil('\n');
     input.trim();
-
     if (input == F("/list")) {
       Serial.println(F("--- KEY LIST ---"));
       for (byte i = 0; i < 10; i++) {
@@ -468,9 +459,13 @@ void consoleKeyRename() {
         Serial.print(keyList[i].name);
         Serial.print(F(" | ID: "));
         for (byte j = 0; j < 4; j++) {
-          if (keyList[i].code[j] < 0x10) Serial.print(F("0"));
+          if (keyList[i].code[j] < 0x10){ 
+            Serial.print(F("0"));
+          }
           Serial.print(keyList[i].code[j], HEX);
-          if (j < 3) Serial.print(F(":"));
+          if (j < 3){
+            Serial.print(F(":"));
+          }
         }
         Serial.println();
       }
@@ -478,12 +473,15 @@ void consoleKeyRename() {
     }
     else if (input.startsWith("/rename=")) {
       int commaIndex = input.indexOf(',');
-      if (commaIndex > 4) {
-        byte index = input.substring(4, commaIndex).toInt();
+      int tangleIndex = input.indexOf('=');
+
+      if(commaIndex > tangleIndex + 1 && commaIndex != -1 &&  tangleIndex != -1){
+
+        byte index = input.substring(tangleIndex + 1, commaIndex).toInt();
         String newName = input.substring(commaIndex + 1);
 
-        if (index < 10 && newName.length() > 0 && newName.length() <= 9){
-          newName.toCharArray(keyList[index].name, sizeof(keyList[index].name));
+        if (index < 10 && index <= 10 && newName.length() > 0 && newName.length() <= 9){
+          newName.toCharArray(keyList[index - 1].name, sizeof(keyList[index - 1].name));
           
           EEPROM.write(10, 0xA5);
           EEPROM.put(11, keyList);
@@ -491,10 +489,13 @@ void consoleKeyRename() {
           Serial.print(F("Key "));
           Serial.print(index);
           Serial.print(F(" renamed to: "));
-          Serial.println(keyList[index].name);
+          Serial.println(keyList[index - 1].name);
         } else {
           Serial.println(F("Error: Index out of range (0-9) or name is too long"));
         }
+      }else{
+        Serial.println(F("Error: Incorrect command!"));
+        Serial.println(F("Right command example:/rename=1,MyKey1"));
       }
     }
   }
